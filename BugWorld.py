@@ -506,7 +506,6 @@ class BugWorld:  # defines the world, holds the objects, defines the rules of in
 	global_plant_food_amount = 0
 	global_meat_food_amount = 0
 
-
 	def __init__(self):
 
 		self.rel_position = BugWorld.MAP_TO_CANVAS  # maps Bug World coords to the canvas coords in Pygame

@@ -2,6 +2,7 @@
 import os
 import logging
 import math
+import pickle
 import neat as NEAT
 from neat.math_util import mean
 from neat.reporting import ReporterSet
@@ -133,6 +134,11 @@ class BugPopulation:
 
 		self._pop_type = pop_type
 		self._pop_objects = []  # list of all of the bugs in the population. if use unique key could make it a dict
+		pop_name = bw.BWOType.get_name(pop_type)
+
+		local_winner_name = pop_name + '-winner'
+		local_dir = os.path.dirname(__file__)
+		self.default_winner_file = os.path.join(local_dir, local_winner_name)
 
 		# call all of the specific NEAT related initializations
 		self.NEAT_init(NEAT_config)
@@ -196,6 +202,7 @@ class BugPopulation:
 		# track best genome ever seen
 		if self.best_genome is None or best.fitness > self.best_genome.fitness:
 			self.best_genome = best
+			self.save_winner(best)
 
 		if self.species.species:
 			self.reporters.post_evaluate(self.config, curr_genomes, self.species, best)
@@ -218,7 +225,7 @@ class BugPopulation:
 															   self.config.genome_config,
 															   self.config.pop_size)
 			else:
-				raise CompleteExtinctionException()
+				raise NEAT.CompleteExtinctionException()
 
 		# Divide the new population into species.
 		self.species.speciate(self.config, new_genomes, self.generation)
@@ -295,6 +302,11 @@ class BugPopulation:
 		new_genomes = self.NEAT_run()
 		objs_to_del, objs_to_add = self.prune_population(new_genomes)
 		return objs_to_del, objs_to_add
+
+	def save_winner(self, winner):
+		# Save the winner.
+		with open(self.default_winner_file, 'wb') as f:
+			pickle.dump(winner, f)
 
 
 class BugPopulations:
