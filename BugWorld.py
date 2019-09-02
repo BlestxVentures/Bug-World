@@ -63,25 +63,12 @@ class PGObject():
 #	- kills objects
 #	- determines rules for affecting object attributes (health, mutating, mating)
 
-# objects register for different types of collisions (physical, sound, smell, light(RGB))
-# senses are modeled as a collision between sensory hitbox and stimulus
+# objects register for different types of collisions (physical, visual, sound, smell)
+# senses are modeled as a collision between sensory hitbox and emitter
 # 	(e.g., eye hit box collides with bug body visual emittter
 # contains rules of interactions between objects
 # how do bugs die
-
 #objects have hitboxes for each sensor.
-
-# Phase 1
-# objects have physical collision...bodies collide with other solid bodies
-# eye hitboxes collide with objects that emit visual data and extracts RGB values from the target object .color tuple
-
-# Phase 1b
-# Need an energy system
-	# controls whether starves
-	# consume energy based on speed
-	# speed driven by amount of energy
-
-# Phase 1c - Implement Genetic Algorithm
 
 # Phase 2
 # objects emit sound (varies on speed)
@@ -122,16 +109,16 @@ class PGObject():
 class BWObject(PGObject):  # Bug World Object
 	"""Abstract base class.  All objects in the BugWorld must be of this type"""
 
-	#Everything is a BWObject including bug body parts (e.g., eyes, ears, noses) and non bug inanimate objects.
-	#has a position and orientation relative to the container, which could be the world.
-	#has a color
-	#has a size
-	#has a name
-	#stores an absolute position to prevent recalculating it when passing to contained objects.
-	#BWO's should have a draw method that includes itself
-	#BWO's should have an update method that includes itself and any subcomponents
+	# Everything is a BWObject including bug body parts (e.g., eyes, ears, noses) and non bug inanimate objects.
+	# has a position and orientation relative to the container, which could be the world.
+	# has a color
+	# has a size
+	# has a name
+	# stores an absolute position to prevent recalculating it when passing to contained objects.
+	# BWO's should have a draw method that includes itself
+	# BWO's should have an update method that includes itself and any subcomponents
 
-	def __init__(self, bug_world, starting_pos, name="BWOBject"):
+	def __init__(self, bug_world, starting_pos, name):
 		self.bug_world = bug_world 		  # the world that holds this object
 		self.rel_position = starting_pos  # relative the position that holds it (e.g., it is a subcomponent of a bug)
 		self.abs_position = starting_pos  # absolute position in the BugWorld
@@ -216,7 +203,7 @@ import BugBrain as bb
 
 #Color class so can separate out code from PG specific stuff.
 #http://www.discoveryplayground.com/computer-programming-for-kids/rgb-colors/
-class Color(): #RGB values
+class Color:  # RGB values
 	BLACK = (0, 0, 0)
 	WHITE = (255, 255, 255)
 	RED = (255, 0, 0)
@@ -232,8 +219,6 @@ class Color(): #RGB values
 
 class BWOType:
 	""" Defines the different types of objects allowed within a Bug World"""
-
-#TODO make a dictionary so can get the text for debugging and filenames.
 
 	# use integers so it is faster for dict lookups
 	# can use count from itertools to increment an index
@@ -268,7 +253,7 @@ class BWOType:
 
 	
 class PhysicalCollisionMatrix(coll.CollisionMatrix):
-	"""This class controls what happens when objects physcialy collide"""
+	"""This class controls what happens when objects physically collide"""
 
 	def __init__(self, collisions):
 		super().__init__(self.get_collision_dictionary())
@@ -485,24 +470,23 @@ class BugWorld:  # defines the world, holds the objects, defines the rules of in
 	BOUNDARY_WIDTH = 1000
 	BOUNDARY_HEIGHT = 800
 	BOUNDARY_WRAP = True  # controls whether bugs go off one side and enter the other (WRAP), or hit a wall
+	IDENTITY = np.identity(4, int)  # make a specific version in case change dimension from 3 to 2
+	MAP_TO_CANVAS = [[1,0,0,0], [0,-1,0,BOUNDARY_HEIGHT], [0,0,-1,0], [0,0,0,1]]  # flip x-axis and translate origin
 
 	# controls the initial number of objects in the World to start
+	# TODO make this a dictionary for configuration.
 	NUM_CARNIVORE_BUGS = 0
 	NUM_OMNIVORE_BUGS = 0
 	NUM_HERBIVORE_BUGS = 30
 	NUM_PLANT_FOOD = 30
 	NUM_MEAT_FOOD = 0
 	NUM_OBSTACLES = 10
-
-	# control reproduction in the world
-	NUM_STEPS_BEFORE_REPRODUCTION = 500
-
-	IDENTITY = np.identity(4, int)  # make a specific version in case change dimension from 3 to 2
-	MAP_TO_CANVAS = [[1,0,0,0], [0,-1,0,BOUNDARY_HEIGHT], [0,0,-1,0], [0,0,0,1]]  # flip x-axis and translate origin
-
+	NUM_STEPS_BEFORE_REPRODUCTION = 500  # control reproduction in the world
 	# used to control what types of objects will be controlled by the population interface
-	valid_population_types = {BWOType.OMN, BWOType.HERB, BWOType.CARN}  # the different types of populations allowed
+#	valid_population_types = {BWOType.OMN, BWOType.HERB, BWOType.CARN}  # the different types of populations allowed
+	valid_population_types = {BWOType.HERB}  # the different types of populations allowed
 
+	# TODO put into a global state object so can be updated and queried
 	global_plant_food_amount = 0
 	global_meat_food_amount = 0
 
@@ -518,33 +502,29 @@ class BugWorld:  # defines the world, holds the objects, defines the rules of in
 
 		# instantiate the populations system
 		self.populations = pop.BugPopulations(self, self.valid_population_types)
-		self.sim_step = 0
+		self.sim_step = 0  # keep track of the simulation step
 		self.reproduction_countdown = BugWorld.NUM_STEPS_BEFORE_REPRODUCTION
 
-		for i in range(0, BugWorld.NUM_HERBIVORE_BUGS):  # instantiate all of the Herbivores with a default name
-			start_pos = BugWorld.get_random_location_in_world(self)
-			self.WorldObjects.append(Herbivore(self, start_pos, "H" + str(i)))
+		# TODO: let the populations pass back a list
+		objs_to_add = self.populations.create_new()
 
-		for i in range(0, BugWorld.NUM_CARNIVORE_BUGS):
-			start_pos = BugWorld.get_random_location_in_world(self)
-			self.WorldObjects.append(Carnivore(self, start_pos, "C" + str(i)))
-
-		for i in range(0, BugWorld.NUM_OMNIVORE_BUGS):
-			start_pos = BugWorld.get_random_location_in_world(self)
-			self.WorldObjects.append(Omnivore(self, start_pos, "O" + str(i)))
+		# now add all of the new bugs
+		for ao in objs_to_add:
+			bug_type, genome = ao
+			new_bug = self.world_object_factory(bwo_type=bug_type, genome=genome)
+			self.WorldObjects.append(new_bug)
 
 		for i in range(0, BugWorld.NUM_OBSTACLES):
-			start_pos = BugWorld.get_random_location_in_world(self)
-			self.WorldObjects.append(Obstacle(self, start_pos, "B" + str(i)))
+			new_obj = self.world_object_factory(BWOType.OBST, name="O"+str(i))
+			self.WorldObjects.append(new_obj)
 
-		for i in range(0, BugWorld.NUM_PLANT_FOOD ):
-			start_pos = BugWorld.get_random_location_in_world(self)
-			plant = Plant(self, start_pos, "P" + str(i))
-			self.WorldObjects.append(plant)
+		for i in range(0, BugWorld.NUM_PLANT_FOOD):
+			new_obj = self.world_object_factory(BWOType.PLANT, name="P"+str(i))
+			self.WorldObjects.append(new_obj)
 
 		for i in range(0, BugWorld.NUM_MEAT_FOOD):
-			start_pos = BugWorld.get_random_location_in_world(self)
-			self.WorldObjects.append(Meat(self, start_pos, "M" + str(i)))
+			new_obj = self.world_object_factory(BWOType.MEAT, name="M"+str(i))
+			self.WorldObjects.append(new_obj)
 
 	def update(self):
 		for BWO in self.WorldObjects:
@@ -662,10 +642,6 @@ class BugWorld:  # defines the world, holds the objects, defines the rules of in
 
 		if starting_pos is None:
 			starting_pos = self.get_random_location_in_world()
-
-		if name is None:
-			name = BWOType.get_name(bwo_type)
-			#TODO add unique counter for the bug
 
 		if bwo_type == BWOType.HERB:
 			return Herbivore(self, starting_pos, name, genome)

@@ -1,0 +1,11 @@
+
+
+class SimplePopulationInterface:
+
+	def __init__(self):
+		pass
+
+
+class SimplePopulation:
+	def __init(self):
+		pass

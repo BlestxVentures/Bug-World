@@ -20,8 +20,8 @@ Within a population, there is a concept of speciation (from NEAT) that allows fo
 	population to discourage wiping out interesting (i.e., genetically distant) mutations before they can explore the
 	solution space
 
-Reqs:
-- Population will be able to assemble to all genomes in it to be used with Neat supplied code.  Each bug has a genome
+Requirements:
+- Population will be able to assemble all genomes in it to be used with NEAT supplied code.  Each bug has a genome
 - Population will be able to identify new bugs that need to be added to the world by supplying genomes
 - Population will be able to identify bug that should be removed from the World but won't will actually delete it
 - Has the concept of a generation.  Each generation "runs" for a while then there is population-wide mating/mutating
@@ -31,7 +31,7 @@ Reqs:
 - Need to rebuild the population if it starts to die off (maybe use the logistic function for this?).  
 	Predator/Prey dynamics
 
-- Need to be able to create a bug from a gene (this should be in the constructor of the bug
+- Need to be able to create a bug from a gene (this should be in the constructor of the bug...or the factory?)
 - Need to store a gene so can start a sim from there (maybe the best one of each population?)
 - Need to loop through all of the populations and have each one save itself and then return the file name so can load
 	them in
@@ -51,10 +51,9 @@ BugPopulationInterface -- a bug must implement this interface to participate in 
 	- reads in the config file and stores the config for this particular population
 	- maintains data related to the population
 	- needs to have a fitness function associated with it.  Should be different for different populations
-		 (i.e., how is a carnivore motivated vs herbivore)
+		(i.e., how is a carnivore motivated vs herbivore)
 	- needs to assign the reproduction method so can be called each generation if not using DefaultReproduction
 	- needs to have the equivalent functionality of the inherited "run" function
-
 '''
 
 
@@ -88,20 +87,23 @@ class BugPopulationInterface:
 			logging.error("genome was never initialized for: " + self._owner_bug.name)
 			exit(0)
 
-		# The NEAT libraries use dictionaries of genomes.  So they are stored and retrieved as such.
-		for genome_id, genome in self._genome.items():
-			genome.fitness = self.calc_fitness()  # make sure the fitness is updated before used for reproduction
+		self._genome.fitness = self.calc_fitness()  # make sure the fitness is updated before used for reproduction
 
-		return self._genome  # this should be a NEAT genome dictionary
+		return self._genome
+
+	def get_genome_id(self):
+		if self._genome is None:
+			logging.error("genome was never initialized for: " + self._owner_bug.name)
+			exit(0)
+
+		return self._genome.key  # get the genomes unique identifier, otherwise default to zero
 
 	def am_i_in_this_list(self, genome_keys):
 		if self._genome is None:
 			logging.error("genome was never initialized for: " + self._owner_bug.name)
 			exit(0)
 
-		# The NEAT libraries use dictionaries of genomes.  So they are stored and retrieved as such.
-		for genome_id, genome_obj in self._genome.items():
-			return genome_id in genome_keys
+		return self._genome.key in genome_keys
 
 	def calc_fitness(self):
 		# this where we decide what makes a good bug. By default, it will use owner_bugs method
@@ -121,12 +123,10 @@ class BugPopulationInterface:
 		self._owner_bug = None
 
 
-#TODO Maybe use some BugWorldPopulation base class for all objs?  i.e., move plants and meat to a diff pop?
 class BugPopulation:
 	"""A BugPopulation holds all of the bugs of a given bug type e.g., OMN, CARN, HERB"""
 
 	# This is a complete re-write of the NEAT Population interface
-
 
 	def __init__(self, NEAT_config, pop_type):
 		""" config: is the NEAT config	\
@@ -134,8 +134,9 @@ class BugPopulation:
 
 		self._pop_type = pop_type
 		self._pop_objects = []  # list of all of the bugs in the population. if use unique key could make it a dict
-		pop_name = bw.BWOType.get_name(pop_type)
+		pop_name = bw.BWOType.get_name(pop_type)  # name the population based on the text version of bug type
 
+		# create a file to store the best bug in the population
 		local_winner_name = pop_name + '-winner'
 		local_dir = os.path.dirname(__file__)
 		self.default_winner_file = os.path.join(local_dir, local_winner_name)
@@ -180,6 +181,27 @@ class BugPopulation:
 		self.species = config.species_set_type(config.species_set_config, self.reporters)
 		self.generation = 0
 		self.best_genome = None
+
+	def create_new(self, initial_state=None):
+		objs_to_add = []
+
+		if initial_state is None:
+			# Create a population from scratch, then partition into species.
+			self.population = self.reproduction.create_new(self.config.genome_type,
+														   self.config.genome_config,
+														   self.config.pop_size)
+			self.species = self.config.species_set_type(self.config.species_set_config, self.reporters)
+			self.generation = 0
+			self.species.speciate(self.config, self.population, self.generation)
+		else:
+			self.population, self.species, self.generation = initial_state
+
+		self.best_genome = None
+
+		for key_id, genome in self.population.items():  # loop through all that are to be added and create a list
+			objs_to_add.append((self._pop_type, genome))
+
+		return objs_to_add
 
 	def	NEAT_run(self):
 
@@ -240,15 +262,17 @@ class BugPopulation:
 	def get_new_genome(self):
 		# Create a new gene using NEAT interface
 		genomes = self.reproduction.create_new(self.config.genome_type,
-											self.config.genome_config,
-											num_genomes=1)
-		return genomes
+											   self.config.genome_config,
+											   num_genomes=1)
+		genome_key, genome = genomes.popitem() 	# should only be one item in the dictionary
+		return genome
 
 	def gather_genomes(self):
 		# since NEAT works on a dictionary of genomes, put them in a form that can be passed
 		genomes = {}
 		for pop_obj in self._pop_objects:  # loop through the current bug population
-			genomes.update(pop_obj.pi.get_genome())
+			genome = pop_obj.pi.get_genome()
+			genomes.update({genome.key:genome})
 		return genomes
 
 	def add_to_population(self, bug):
@@ -289,8 +313,7 @@ class BugPopulation:
 
 		for key_id in add_set:  # loop through all that are to be added and create a list of genomes to add
 			genome_obj = new_genomes[key_id]
-			genome_dict = {key_id:genome_obj}  # create a one entry dictionary
-			objs_to_add.append((self._pop_type, genome_dict))  	# if it hasn't been found, then
+			objs_to_add.append((self._pop_type, genome_obj))  	# if it hasn't been found, then
 																# add new_genome to the list of bugs to create
 
 		# should pass back a list of bugs need to be removed from the world.
@@ -313,7 +336,6 @@ class BugPopulations:
 	"""This contains all of the different populations in a given BugWorld"""
 	# TODO store the config file names for each population, if not supplied use a default
 	# read in and store the config params for each population
-
 
 	def __init__(self, bug_world, valid_bug_types):
 		"""	bug_world: is the owner \
@@ -343,6 +365,14 @@ class BugPopulations:
 		except KeyError:
 			logging.warning("invalid population type: ", population_type)
 			exit()
+
+	def create_new(self):
+		objs_to_add = []
+		for pop in self.populations.values():
+			ota = pop.create_new()
+			objs_to_add.extend(ota)
+
+		return objs_to_add
 
 	def reproduce(self):
 		objs_to_del = []

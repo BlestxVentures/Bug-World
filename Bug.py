@@ -83,7 +83,7 @@ class Bug(bw.BWObject):
 	DEFAULT_TURN_AMT = np.deg2rad(30)  	# turns are in radians, used for random moving
 	DEFAULT_MOVE_AMT = 5				# used for random moving
 
-	def __init__(self, bug_world, initial_pos, name="Bug", genome=None, bug_type=None):
+	def __init__(self, bug_world, initial_pos, name=None, genome=None, bug_type=None):
 		super().__init__(bug_world, initial_pos, name)
 		self.size = 10  # override default and set the intial radius of bug
 		self.color = bw.Color.PINK  # override default and set the initial color of a default bug
@@ -113,9 +113,10 @@ class Bug(bw.BWObject):
 
 		# interface to the brain...requires config if using NEAT
 		# population interface must be instantiated first
-		config = self.pi.get_population_config()
-		genome = self.pi.get_genome()
-		self.bi = bb.BugBrainInterface(self, config, genome)
+		self.config = self.pi.get_population_config()
+		self.genome = self.pi.get_genome()
+		self.bi = bb.BugBrainInterface(self, self.config, self.genome)
+		self.name = self.create_name()
 
 		# add the eyes for a default bug
 		# put eye center on circumference of bug body, rotate then translate.
@@ -132,6 +133,12 @@ class Bug(bw.BWObject):
 		self.add_subcomponent(BugEye(bug_world, self.owner, self.RIGHT_EYE_LOC, self.EYE_SIZE,"R"))
 		self.add_subcomponent(BugEye(bug_world, self.owner, self.LEFT_EYE_LOC, self.EYE_SIZE,"L"))
 
+	def create_name(self):
+		if self.name is None:
+			unique_key = self.pi.get_genome_id()
+			name = bw.BWOType.get_name(self.type)+str(unique_key)
+		return name
+
 	def calc_fitness(self):
 		default_fitness = self.energy*self.health*self.score
 		return default_fitness
@@ -145,7 +152,6 @@ class Bug(bw.BWObject):
 		# uncomment this to not use the brain
 		# self.kinematic_wander()
 
-		# TODO implement the brain interface to control motion here
 		# update the brain with the velocity from the last cycle
 		self.bi.update_brain_inputs({"vel_r":self.vel_r, "vel_l":self.vel_l})
 

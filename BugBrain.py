@@ -41,11 +41,8 @@ class BugBrainInterface:
 			#TODO: create a brain with a genome
 			logging.error("No genome detected for bug: " + self.owner.name )
 
-	def create_brain(self, config, genome_dict):
+	def create_brain(self, config, genome):
 		# create a new brain
-		# all comes from DefaultGenome section of the config file
-		for genome_id, genome in genome_dict.items():
-			pass
 
 		self.net = NEAT.nn.feed_forward.FeedForwardNetwork.create(genome, config)
 
