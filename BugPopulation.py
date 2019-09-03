@@ -185,7 +185,19 @@ class BugPopulation:
 	def create_new(self, initial_state=None):
 		objs_to_add = []
 
-		if initial_state is None:
+		# TODO: what about genome key collision from loading from an old file
+		winner = self.load_winner()
+		if winner is not None:
+			# create a population
+			genomes = {}
+			genome_to_mate_with = self.get_new_genome()
+			genomes.update({winner.key:winner, genome_to_mate_with.key:genome_to_mate_with})
+			self.population = genomes
+			self.species = self.config.species_set_type(self.config.species_set_config, self.reporters)
+			self.generation = 0
+			self.species.speciate(self.config, self.population, self.generation)
+
+		elif initial_state is None:
 			# Create a population from scratch, then partition into species.
 			self.population = self.reproduction.create_new(self.config.genome_type,
 														   self.config.genome_config,
@@ -228,9 +240,6 @@ class BugPopulation:
 
 		if self.species.species:
 			self.reporters.post_evaluate(self.config, curr_genomes, self.species, best)
-		else:
-			# Divide the new population into species.
-			self.species.speciate(self.config, curr_genomes, self.generation)
 
 		# Create the next generation from the current generation.
 		new_genomes = self.reproduction.reproduce(self.config, self.species,
@@ -331,6 +340,15 @@ class BugPopulation:
 		with open(self.default_winner_file, 'wb') as f:
 			pickle.dump(winner, f)
 
+	def load_winner(self):
+		# Load the most successful bug from last session
+		if not os.path.exists(self.default_winner_file):
+			return None
+
+		with open(self.default_winner_file, 'rb') as f:
+			winner = pickle.load(f)
+
+		return winner
 
 class BugPopulations:
 	"""This contains all of the different populations in a given BugWorld"""
@@ -403,15 +421,13 @@ class BugPopulations:
 		# the same directory as this script.
 		local_dir = os.path.dirname(__file__)
 		pop_name = bw.BWOType.get_name(population_type)
-		config_file_name = pop_name + '-config-ff'
 
-		# TODO remove this once it is being used
-		config_file_name = 'BUG-config-ff'
+		config_file_name = pop_name + '-config-ff'  # use the bug type specific file if there is one...otherwise use default
+		if not os.path.exists(config_file_name):
+			config_file_name = 'BUG-config-ff'
 
 		config_path = os.path.join(local_dir, config_file_name)
 
-		# TODO...if file doesn't exist, try using a default config file
-		# right now errors out if doesn't exist
 		config = NEAT.Config(NEAT.DefaultGenome, NEAT.DefaultReproduction,
 								NEAT.DefaultSpeciesSet, NEAT.DefaultStagnation,
 								config_path)

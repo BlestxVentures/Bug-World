@@ -502,13 +502,13 @@ class BugWorld:  # defines the world, holds the objects, defines the rules of in
 
 		# instantiate the populations system
 		self.populations = pop.BugPopulations(self, self.valid_population_types)
-		self.sim_step = 0  # keep track of the simulation step
 		self.reproduction_countdown = BugWorld.NUM_STEPS_BEFORE_REPRODUCTION
 
-		# TODO: let the populations pass back a list
-		objs_to_add = self.populations.create_new()
+		self.sim_step = 0  # keep track of the simulation step
 
-		# now add all of the new bugs
+		objs_to_add = self.populations.create_new()  # create the initial populations
+
+		# now add all of the new bugs to the world
 		for ao in objs_to_add:
 			bug_type, genome = ao
 			new_bug = self.world_object_factory(bwo_type=bug_type, genome=genome)
@@ -650,15 +650,15 @@ class BugWorld:  # defines the world, holds the objects, defines the rules of in
 		elif bwo_type == BWOType.OMN:
 			return Omnivore(self, starting_pos, name, genome)
 		elif bwo_type == BWOType.OBST:
-			if not genome:
+			if genome:
 				logging.error("shouldn't have a genome for an obstacle")
 			return Obstacle(self, starting_pos, name)
 		elif bwo_type == BWOType.MEAT:
-			if not genome:
+			if genome:
 				logging.error("shouldn't have a genome for an meat")
 			return Meat(self, starting_pos, name)
 		elif bwo_type == BWOType.PLANT:
-			if not genome:
+			if genome:
 				logging.error("shouldn't have a genome for an plant ( yet :-} )")
 			return Plant(self, starting_pos, name)
 		else:
