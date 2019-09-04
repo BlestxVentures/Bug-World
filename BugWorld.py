@@ -482,7 +482,7 @@ class BugWorld:  # defines the world, holds the objects, defines the rules of in
 	NUM_MEAT_FOOD = 0
 	NUM_OBSTACLES = 10
 	NUM_STEPS_BEFORE_REPRODUCTION = 500  # control reproduction in the world
-	MAX_GENERATIONS = 5000  # stop simulation after this many reproductions
+	MAX_GENERATIONS = 500  # stop simulation after this many reproductions
 
 	# used to control what types of objects will be controlled by the population interface
 #	valid_population_types = {BWOType.OMN, BWOType.HERB, BWOType.CARN}  # the different types of populations allowed

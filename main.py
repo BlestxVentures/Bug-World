@@ -1,5 +1,5 @@
-import pygame 
-import os 
+import argparse
+import os
 os.environ['SDL_VIDEO_CENTERED'] = '1'
 
 from pygame.locals import *
@@ -61,18 +61,19 @@ class BugSim( PygameHelper ):
 	def mouseUp2(self, pos):
 		pass
 
-
-if __name__ == "__main__":
-	g = BugSim()
-	g.mainLoop(60)
 '''
-
 https://docs.python.org/3/library/argparse.html
-
-https://stackoverflow.com/questions/39390418/python-how-can-i-enable-use-of-kwargs-when-calling-from-command-line-perhaps
-def f(log=None, bin=None, pid=None, conf=None):
-    self.log = log
-    self.bin = bin
-    self.pid = pid
-    self.conf = conf
 '''
+if __name__ == "__main__":
+	parser = argparse.ArgumentParser()
+	parser.add_argument("--nodisplay", help="run without drawing simulation on the screen", action="store_true")
+
+	args = parser.parse_args()
+
+	if args.nodisplay:
+		bw = BugWorld()  # instantiate the world and its objects
+		while not bw.exit_simulation:
+			bw.update()
+	else:
+		g = BugSim()
+		g.mainLoop(60)
