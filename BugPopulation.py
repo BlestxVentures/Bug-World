@@ -81,6 +81,7 @@ class BugPopulationInterface:
 			self._genome = self._pop.get_new_genome()  	# genomes are specific to a given population.
 														# This will be handed to the brain interface to create the brain
 														# and use by NEAT for reproduction.
+		self._genome.fitness = 0
 
 	def get_genome(self):
 		if self._genome is None:

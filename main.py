@@ -17,15 +17,17 @@ class BugSim( PygameHelper ):
 		self.BW = BugWorld()  # instantiate the world and its objects
 		super(BugSim, self).__init__((self.BW.BOUNDARY_WIDTH, self.BW.BOUNDARY_HEIGHT), Color.WHITE)
 		self.pause = False
+		self.draw_screen = True
 
 	def update(self):  # update everything in the world
 		if not self.pause:
 			self.BW.update()
 
 	def draw(self):  # draw the resulting world
-		self.screen.fill(Color.WHITE)
-		self.BW.draw(self.screen)
-		pygame.display.update()
+		if self.draw_screen:
+			self.screen.fill(Color.WHITE)
+			self.BW.draw(self.screen)
+			pygame.display.update()
 
 	def keyDown(self, key):
 		
@@ -34,6 +36,13 @@ class BugSim( PygameHelper ):
 				self.pause = False
 			else:
 				self.pause = True
+
+		if key == K_d:  # pause the game
+			if self.draw_screen:
+				self.draw_screen = False
+			else:
+				self.draw_screen = True
+
 
 		elif key == K_LEFT:
 			pass
