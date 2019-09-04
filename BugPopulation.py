@@ -6,6 +6,7 @@ import pickle
 import neat as NEAT
 from neat.math_util import mean
 from neat.reporting import ReporterSet
+from itertools import count
 
 #only for debugging memory
 #from memory_profiler import profile
@@ -186,17 +187,23 @@ class BugPopulation:
 	def create_new(self, initial_state=None):
 		objs_to_add = []
 
-		# TODO: what about genome key collision from loading from an old file
 		winner = self.load_winner()
 		if winner is not None:
 			# create a population
 			genomes = {}
+			winner.key = int(1)
+			# TODO: what about genome key collision from loading from an old file
+			# TODO: should move this to a subclass of reproduction?
+			self.reproduction.genome_indexer = count(2)
 			genome_to_mate_with = self.get_new_genome()
-			genomes.update({winner.key:winner, genome_to_mate_with.key:genome_to_mate_with})
+			genomes.update({winner.key: winner, genome_to_mate_with.key: genome_to_mate_with})
 			self.population = genomes
 			self.species = self.config.species_set_type(self.config.species_set_config, self.reporters)
 			self.generation = 0
 			self.species.speciate(self.config, self.population, self.generation)
+
+
+
 
 		elif initial_state is None:
 			# Create a population from scratch, then partition into species.
@@ -266,6 +273,12 @@ class BugPopulation:
 
 		# increase the generation
 		self.generation += 1
+
+		# TODO: change to use global sim state dictionary
+		if self.generation > bw.BugWorld.MAX_GENERATIONS:
+			bw.BugWorld.exit_simulation = True
+
+
 
 		return new_genomes
 

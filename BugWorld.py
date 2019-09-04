@@ -482,6 +482,8 @@ class BugWorld:  # defines the world, holds the objects, defines the rules of in
 	NUM_MEAT_FOOD = 0
 	NUM_OBSTACLES = 10
 	NUM_STEPS_BEFORE_REPRODUCTION = 500  # control reproduction in the world
+	MAX_GENERATIONS = 5000  # stop simulation after this many reproductions
+
 	# used to control what types of objects will be controlled by the population interface
 #	valid_population_types = {BWOType.OMN, BWOType.HERB, BWOType.CARN}  # the different types of populations allowed
 	valid_population_types = {BWOType.HERB}  # the different types of populations allowed
@@ -489,6 +491,7 @@ class BugWorld:  # defines the world, holds the objects, defines the rules of in
 	# TODO put into a global state object so can be updated and queried
 	global_plant_food_amount = 0
 	global_meat_food_amount = 0
+	exit_simulation = False  # any thing can set this to false and it will terminate the simulation.
 
 	def __init__(self):
 
