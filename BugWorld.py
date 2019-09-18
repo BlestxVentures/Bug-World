@@ -4,12 +4,13 @@ import random
 from itertools import count
 
 #comment out debugging imports
-#from memory_profiler import profile
-#import sys
-#import gc
-#import objgraph
-#import os
-#os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
+from memory_profiler import profile
+import sys
+import gc
+import objgraph
+import os
+os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
+import neat
 
 
 #Going to use 3D matrices even if in 2d
@@ -478,11 +479,11 @@ class BugWorld:  # defines the world, holds the objects, defines the rules of in
 	NUM_CARNIVORE_BUGS = 0
 	NUM_OMNIVORE_BUGS = 0
 	NUM_HERBIVORE_BUGS = 30
-	NUM_PLANT_FOOD = 30
+	NUM_PLANT_FOOD = 50
 	NUM_MEAT_FOOD = 0
 	NUM_OBSTACLES = 10
 	NUM_STEPS_BEFORE_REPRODUCTION = 500  # control reproduction in the world
-	MAX_GENERATIONS = 500  # stop simulation after this many reproductions
+	MAX_GENERATIONS = 5000  # stop simulation after this many reproductions
 
 	# used to control what types of objects will be controlled by the population interface
 #	valid_population_types = {BWOType.OMN, BWOType.HERB, BWOType.CARN}  # the different types of populations allowed
@@ -542,7 +543,7 @@ class BugWorld:  # defines the world, holds the objects, defines the rules of in
 	def draw(self, surface):
 		for BWO in self.WorldObjects:
 			BWO.draw(surface)
-
+	#@profile
 	def adjust_populations(self):
 		objs_to_del = []
 		objs_to_add = []
@@ -571,6 +572,8 @@ class BugWorld:  # defines the world, holds the objects, defines the rules of in
 		for wo in self.WorldObjects:
 			if wo in objs_to_del:  # if the objects health is gone, add it to the list of objects to delete
 				delete_list.append(wo)
+			elif wo.health < 1 and (wo.type == BWOType.PLANT or wo.type == BWOType.MEAT):
+				delete_list.append(wo)
 			else:  # copy the object over to the working list
 				wo.reset_fitness()  # NEAT evaluations
 				working_list.append(wo)
@@ -582,29 +585,50 @@ class BugWorld:  # defines the world, holds the objects, defines the rules of in
 		for dl in delete_list:
 			dl.kill()
 
-		# if len(delete_list):
-		# 	temp_dl = delete_list[0]
-		# else:
-		# 	temp_dl = None
-		#
-		# for dl in delete_list:
-		# 	rc = sys.getrefcount(dl)
-		# 	print("before kill:" + str(rc))
-		# 	dl.kill()
-		# 	rc = sys.getrefcount(dl)
-		# 	print("after kill:" + str(rc))
+		delete_list.clear()
+		#gc.collect()
 
-		# if temp_dl is not None:
-		# 	gc.collect()
-		# 	rc = sys.getrefcount(temp_dl)
-		# 	objgraph.show_backrefs(temp_dl, filename='temp_dl.png')
-		# 	print("after gc:" + str(rc))
+		# debugging code
+		#if len(delete_list):
+		#	temp_dl = delete_list[0]
+		#else:
+		#	temp_dl = None
+		#
+		#for dl in delete_list:
+		#	rc = sys.getrefcount(dl)
+		#	print("before kill:" + str(rc))
+		#	dl.kill()
+		#	rc = sys.getrefcount(dl)
+		#	print("after kill:" + str(rc))
+
+		#if temp_dl is not None:
+		#	gc.collect()
+		#	rc = sys.getrefcount(temp_dl)
+		#	objgraph.show_backrefs(temp_dl, filename='temp_dl.png')
+		#	print("after gc:" + str(rc))
 
 		# now add all of the new bugs
 		for ao in objs_to_add:
 			bug_type, genome = ao
 			new_bug = self.world_object_factory(bwo_type=bug_type, genome=genome)
 			self.WorldObjects.append(new_bug)
+
+		delete_list = None   # get rid of list that points to it
+		objs_to_del = None
+		objs_to_add = None
+		working_list = None
+		#gc.collect()
+		#print("at end of adjust populations, before objgraph")
+		#objgraph.show_most_common_types(limit=50)
+		#objgraph.show_growth()
+		#rc = sys.getrefcount(neat.DefaultGenome)
+		#objgraph.show_backrefs(neat.DefaultGenome, filename='DefaultGenome.png')
+		#objgraph.show_backrefs(pop.BugPopulationInterface, filename='BPI.png', too_many=50)
+
+		#print("after gc:" + str(rc))
+
+		#roots = objgraph.get_leaking_objects()
+		#objgraph.show_most_common_types(objects=roots, limit=100)
 
 	def post_collision_processing(self):
 		#loop through objects and delete them, convert them etc.

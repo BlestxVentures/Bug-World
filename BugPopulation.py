@@ -9,7 +9,12 @@ from neat.reporting import ReporterSet
 from itertools import count
 
 #only for debugging memory
-#from memory_profiler import profile
+from memory_profiler import profile
+import sys
+import gc
+import objgraph
+import os
+os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
 
 import BugWorld as bw
 '''
@@ -124,6 +129,11 @@ class BugPopulationInterface:
 		pop.del_from_population(self._owner_bug)
 		self._owner_bug = None
 
+	def kill(self):
+		self._bug_world = None
+		self._owner_bug = None
+		self._genome = None
+
 
 class BugPopulation:
 	"""A BugPopulation holds all of the bugs of a given bug type e.g., OMN, CARN, HERB"""
@@ -167,8 +177,8 @@ class BugPopulation:
 													 stagnation)
 
 		stats = NEAT.StatisticsReporter()
-		self.add_reporter(stats)
-		self.add_reporter(NEAT.StdOutReporter(True))
+		#self.add_reporter(stats)
+		#self.add_reporter(NEAT.StdOutReporter(True))
 
 		if config.fitness_criterion == 'max':
 			self.fitness_criterion = max
@@ -201,10 +211,6 @@ class BugPopulation:
 			self.species = self.config.species_set_type(self.config.species_set_config, self.reporters)
 			self.generation = 0
 			self.species.speciate(self.config, self.population, self.generation)
-
-
-
-
 		elif initial_state is None:
 			# Create a population from scratch, then partition into species.
 			self.population = self.reproduction.create_new(self.config.genome_type,
@@ -221,8 +227,10 @@ class BugPopulation:
 		for key_id, genome in self.population.items():  # loop through all that are to be added and create a list
 			objs_to_add.append((self._pop_type, genome))
 
+		self.reporters.start_generation(self.generation)
 		return objs_to_add
 
+	#@profile
 	def	NEAT_run(self):
 
 		# collect all of the genomes because NEAT assumes a dictionary
@@ -233,7 +241,7 @@ class BugPopulation:
 			return no_genomes  # the population has no bugs in it.
 
 		# Taken from the NEAT code in population module
-		self.reporters.start_generation(self.generation)
+		#self.reporters.end_generation(self.config, curr_genomes, self.species)
 
 		# gather and report statistics
 		best = None
@@ -246,8 +254,8 @@ class BugPopulation:
 			self.best_genome = best
 			self.save_winner(best)
 
-		if self.species.species:
-			self.reporters.post_evaluate(self.config, curr_genomes, self.species, best)
+		#if self.species.species:
+			#self.reporters.post_evaluate(self.config, curr_genomes, self.species, best)
 
 		# Create the next generation from the current generation.
 		new_genomes = self.reproduction.reproduce(self.config, self.species,
@@ -255,7 +263,7 @@ class BugPopulation:
 
 		# Check for complete extinction.
 		if not self.species.species:
-			self.reporters.complete_extinction()
+			#self.reporters.complete_extinction()
 
 			# If requested by the user, create a completely new population,
 			# otherwise raise an exception.
@@ -269,7 +277,7 @@ class BugPopulation:
 		# Divide the new population into species.
 		self.species.speciate(self.config, new_genomes, self.generation)
 
-		self.reporters.end_generation(self.config, new_genomes, self.species)
+		#self.reporters.end_generation(self.config, new_genomes, self.species)
 
 		# increase the generation
 		self.generation += 1
@@ -277,8 +285,6 @@ class BugPopulation:
 		# TODO: change to use global sim state dictionary
 		if self.generation > bw.BugWorld.MAX_GENERATIONS:
 			bw.BugWorld.exit_simulation = True
-
-
 
 		return new_genomes
 
@@ -344,6 +350,7 @@ class BugPopulation:
 
 		return objs_to_del, objs_to_add
 
+	#@profile
 	def reproduce(self):
 		new_genomes = self.NEAT_run()
 		objs_to_del, objs_to_add = self.prune_population(new_genomes)

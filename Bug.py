@@ -114,8 +114,7 @@ class Bug(bw.BWObject):
 		# interface to the brain...requires config if using NEAT
 		# population interface must be instantiated first
 		self.config = self.pi.get_population_config()
-		self.genome = self.pi.get_genome()
-		self.bi = bb.BugBrainInterface(self, self.config, self.genome)
+		self.bi = bb.BugBrainInterface(self, self.config, self.pi.get_genome())
 		self.name = self.create_name()
 
 		# add the eyes for a default bug
@@ -187,7 +186,9 @@ class Bug(bw.BWObject):
 		self.ci.deregister_all()
 		self.ci = None
 		self.pi.deregister()  # if part of a population, deregister it
+		self.pi.kill()
 		self.pi = None
+		self.bi.kill()
 		self.bi = None
 		self.owner = None
 

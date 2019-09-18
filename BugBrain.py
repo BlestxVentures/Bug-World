@@ -151,6 +151,12 @@ class BugBrainInterface:
 		# return as inputs for the net
 		return inputs
 
+	def kill(self):
+		self._owner = None
+		self._brain_data.clear()
+		self.net = None
+
+
 	''' Inputs:
 	Phase 1
 	- right eye( from collision data ) RGB as separate inputs
