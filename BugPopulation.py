@@ -9,12 +9,12 @@ from neat.reporting import ReporterSet
 from itertools import count
 
 #only for debugging memory
-from memory_profiler import profile
-import sys
-import gc
-import objgraph
-import os
-os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
+#from memory_profiler import profile
+#import sys
+#import gc
+#import objgraph
+#import os
+#os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
 
 import BugWorld as bw
 '''

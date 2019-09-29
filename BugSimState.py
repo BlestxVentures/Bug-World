@@ -9,12 +9,13 @@ data_file_version = '1.0'  # used to change version when file format changes.
 def sim_version():  # used to tie simulation version to the data it produces
 	pass
 
-def config_director():  # where to read the configuration that drives the simulation
+def config_directory():  # where to read the configuration that drives the simulation
 	"""this can be used to store several different configs that would drive a scheduler"""
 	pass
 
 
-def logging_directory():
+def logging_directory():  # where to log information for the simulation
+	"""this can be used to determine where to save data files"""
 	pass
 
 
@@ -27,7 +28,7 @@ def write_to_log():
 def data_directory():
 
 	# create a unique data directory for each simulation
-	def create(): # construct the path for where to read write data for a simulation based on start time, process id?
+	def create():  # construct the path for where to read write data for a simulation based on start time, process id?
 		pass
 
 

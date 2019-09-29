@@ -4,13 +4,13 @@ import random
 from itertools import count
 
 #comment out debugging imports
-from memory_profiler import profile
-import sys
-import gc
-import objgraph
-import os
-os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
-import neat
+#from memory_profiler import profile
+#import sys
+#import gc
+#import objgraph
+#import os
+#os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
+#import neat
 
 
 #Going to use 3D matrices even if in 2d
