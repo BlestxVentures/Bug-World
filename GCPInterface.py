@@ -8,7 +8,7 @@ import logging
 import os
 import cloudstorage as gcs
 
-from google.appengine.api import app_identity
+from google.appengine.api import app_identity # to be able to get the app's current project id
 
 
 class GCSFile:

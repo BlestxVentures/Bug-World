@@ -7,6 +7,7 @@ import neat as NEAT
 from neat.math_util import mean
 from neat.reporting import ReporterSet
 from itertools import count
+import copy
 
 #only for debugging memory
 #from memory_profiler import profile
@@ -17,6 +18,8 @@ from itertools import count
 #os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
 
 import BugWorld as bw
+import BugSimState as bss
+
 '''
 This is to encapsulate the population interface.
 
@@ -72,7 +75,7 @@ class BugPopulationInterface:
 		population"""
 
 	def __init__(self, bug_world, owner_bug, genome=None):
-		"""	bug_world: is where bug lives \
+		"""	bug_world: is where bug lives
 			owner_bug: is the bug that owns this interface"""
 
 		self._bug_world = bug_world
@@ -141,7 +144,7 @@ class BugPopulation:
 	# This is a complete re-write of the NEAT Population interface
 
 	def __init__(self, NEAT_config, pop_type):
-		""" config: is the NEAT config	\
+		""" config: is the NEAT config
 			pop_type: is the type of this population"""
 
 		self._pop_type = pop_type
@@ -149,9 +152,9 @@ class BugPopulation:
 		pop_name = bw.BWOType.get_name(pop_type)  # name the population based on the text version of bug type
 
 		# create a file to store the best bug in the population
-		local_winner_name = pop_name + '-winner'
-		local_dir = os.path.dirname(__file__)
-		self.default_winner_file = os.path.join(local_dir, local_winner_name)
+		self.default_winner_file = pop_name + '-winner'
+
+		bss.init_log()  # initialize logging dirs
 
 		# call all of the specific NEAT related initializations
 		self.NEAT_init(NEAT_config)
@@ -204,9 +207,19 @@ class BugPopulation:
 			winner.key = int(1)
 			# TODO: what about genome key collision from loading from an old file
 			# TODO: should move this to a subclass of reproduction?
-			self.reproduction.genome_indexer = count(2)
-			genome_to_mate_with = self.get_new_genome()
-			genomes.update({winner.key: winner, genome_to_mate_with.key: genome_to_mate_with})
+			if False:  # mate with one random new gene
+				self.reproduction.genome_indexer = count(2)
+				genome_to_mate_with = self.get_new_genome()
+				genomes.update({winner.key: winner, genome_to_mate_with.key: genome_to_mate_with})
+			else:  # mate with a bunch of copies of the original winner
+				genomes.update({winner.key: winner})  # put the previous winner in the mix
+				for n in range(2, self.config.pop_size):  # will stop one short
+					genome_copy = copy.deepcopy(winner)  # make another physical copy
+					genome_copy.key = n  # make sure the genome key is different
+					genomes.update({n: genome_copy})  # add the new copy to the list
+
+				self.reproduction.genome_indexer = count(self.config.pop_size)  # make sure the index is right
+
 			self.population = genomes
 			self.species = self.config.species_set_type(self.config.species_set_config, self.reporters)
 			self.generation = 0
@@ -251,8 +264,10 @@ class BugPopulation:
 
 		# track best genome ever seen
 		if self.best_genome is None or best.fitness > self.best_genome.fitness:
-			self.best_genome = best
+			self.best_genome = copy.deepcopy(best)  # because this one might not make it next time and
 			self.save_winner(best)
+			bss.write_to_log("key", int(best.key), self.generation)
+			bss.write_to_log("fitness", best.fitness, self.generation)
 
 		#if self.species.species:
 			#self.reporters.post_evaluate(self.config, curr_genomes, self.species, best)
@@ -357,19 +372,25 @@ class BugPopulation:
 		return objs_to_del, objs_to_add
 
 	def save_winner(self, winner):
-		# Save the winner.
-		with open(self.default_winner_file, 'wb') as f:
+		# Save the winner in the log directory.
+		save_name = bss.get_genome_save_filename(self.default_winner_file)
+		with open(save_name, 'wb') as f:
 			pickle.dump(winner, f)
 
 	def load_winner(self):
 		# Load the most successful bug from last session
-		if not os.path.exists(self.default_winner_file):
+
+		# TODO move to BugSimState
+		winner_file_name = os.path.join(bss.get_config_dir(), self.default_winner_file)
+		if not os.path.exists(winner_file_name):
 			return None
 
-		with open(self.default_winner_file, 'rb') as f:
+		with open(winner_file_name, 'rb') as f:
 			winner = pickle.load(f)
 
 		return winner
+
+
 
 class BugPopulations:
 	"""This contains all of the different populations in a given BugWorld"""
@@ -377,8 +398,10 @@ class BugPopulations:
 	# read in and store the config params for each population
 
 	def __init__(self, bug_world, valid_bug_types):
-		"""	bug_world: is the owner \
-			valid_bug_types: is a list of all of the valid populations that will be created. Assumes is valid BWOType"""
+		"""	bug_world: is the owner
+			valid_bug_types: is a list of all of the valid populations that will be created.
+								Assumes is valid BWOType
+		"""
 
 		# create a dictionary of valid types that can have brains
 		self.populations = {}
@@ -440,14 +463,16 @@ class BugPopulations:
 
 		# Load the config file, which is assumed to live in
 		# the same directory as this script.
-		local_dir = os.path.dirname(__file__)
+
 		pop_name = bw.BWOType.get_name(population_type)
 
+		# TODO Move to BugSimState
 		config_file_name = pop_name + '-config-ff'  # use the bug type specific file if there is one...otherwise use default
-		if not os.path.exists(config_file_name):
-			config_file_name = 'BUG-config-ff'
+		config_path = os.path.join(bss.get_config_dir(), config_file_name)
 
-		config_path = os.path.join(local_dir, config_file_name)
+		if not os.path.exists(config_path):
+			config_file_name = 'BUG-config-ff'
+			config_path = os.path.join(bss.get_config_dir(), config_file_name)
 
 		config = NEAT.Config(NEAT.DefaultGenome, NEAT.DefaultReproduction,
 								NEAT.DefaultSpeciesSet, NEAT.DefaultStagnation,
