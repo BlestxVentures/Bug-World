@@ -3,6 +3,35 @@
 # message queue interfaces for triggering functions from a message queue
 # Tensorboard interface functions (move to a separate file)
 
+'''
+Requirements
+
+get default bucket name
+get project name that the vm is running in
+
+copy files from local storage to gcs bucket
+copy files from gcs bucket to local storage
+https://cloud.google.com/storage/docs/renaming-copying-moving-objects#storage-rename-object-python
+https://cloud.google.com/storage/docs/uploading-objects
+https://cloud.google.com/storage/docs/downloading-objects#storage-download-object-python
+
+
+score a set of work files so they can be prioritized on the queue
+publish to a gcp topic
+pull from a gcp topic
+https://cloud.google.com/pubsub/docs/publisher
+
+
+read from topic file and create topics if don't exist
+
+'''
+
+# how to use it in APP Engine
+# https://cloud.google.com/appengine/docs/standard/python3/using-cloud-storage
+
+# https://cloud.google.com/python/getting-started/using-cloud-storage
+# https://cloud.google.com/python/tutorials/bookshelf-on-compute-engine
+
 
 import logging
 import os
