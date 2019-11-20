@@ -1,0 +1,6 @@
+
+numpy
+transforms3d
+pygame
+neat-python
+tensorflow
