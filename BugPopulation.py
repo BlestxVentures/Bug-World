@@ -267,7 +267,8 @@ class BugPopulation:
 			self.best_genome = copy.deepcopy(best)  # because this one might not make it next time and
 			self.save_winner(best)
 			bss.write_to_log("key", int(best.key), self.generation)
-			bss.write_to_log("fitness", best.fitness, self.generation)
+			fitness = self.normalize_fitness(best)
+			bss.write_to_log("fitness", fitness, self.generation)
 
 		#if self.species.species:
 			#self.reporters.post_evaluate(self.config, curr_genomes, self.species, best)
@@ -371,9 +372,20 @@ class BugPopulation:
 		objs_to_del, objs_to_add = self.prune_population(new_genomes)
 		return objs_to_del, objs_to_add
 
+	def normalize_fitness(self, winner):
+		# normalize winner based on number of steps in between generations
+		fitness = int(winner.fitness / bw.BugWorld.NUM_STEPS_BEFORE_REPRODUCTION)
+		return fitness
+
 	def save_winner(self, winner):
+		"""
 		# Save the winner in the log directory.
-		save_name = bss.get_genome_save_filename(self.default_winner_file)
+			:param winner: genome of the current winner
+		"""
+
+		# normalize winner based on number of steps in between generations
+		fitness = self.normalize_fitness(winner)
+		save_name = bss.get_genome_save_filename(self.default_winner_file, fitness)
 		with open(save_name, 'wb') as f:
 			pickle.dump(winner, f)
 

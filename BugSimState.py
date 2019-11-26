@@ -2,6 +2,7 @@ import os
 import logging
 import pickle
 import datetime
+import dateutil
 import tensorflow as tf
 import random
 
@@ -71,14 +72,16 @@ def create_timestamp():
 	return datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
 
 
-def get_genome_save_filename(pop_name='Bug'):
+def get_genome_save_filename(pop_name='Bug', fitness=0):
 	"""construct a file name to save a genome
-		pop_name:  default base name
+		:param pop_name:  default base name
+		:param fitness: the normalized fitness of the bug at save time
 	"""
 	# create a unique name for the simulation based on current time
-	local_name = pop_name + create_timestamp()
+	local_name = pop_name + '-' + str(int(fitness)) + '-' + create_timestamp()
 	default_file = os.path.join(get_logging_dir(), local_name)
 	return default_file
+
 
 def write_genome():  # write a single genome to a file and related data
 	"""genome, generation, fitness, bug_type, config file used to describe genome"""
@@ -134,6 +137,53 @@ def genome_to_vec(genome):
 	# should use OrderedDict so all genomes are output the same
 	pass
 
+def get_best_fitness_file(list_of_files):
+	"""
+	given a list of files return the one that contains the best fitness.  in the case of a tie, first one is chosen
+	:param list_of_files:
+	:return: filename of best fitness
+	"""
+	#TODO use an object or creator to decouple from filename
+	# in get_sim_save_filename for structure
+	fitness = int(0)
+	fitness_dt = None
+	rf = ""
+	for fn in ls:
+		fields = fn.split('-')
+		file_fitness = int(fields[2])
+		file_date = str(fields[3])
+		file_time = str(fields[4])
+		file_dt = dateutil.parser.parse(file_date + ' ' + file_time)
+
+		# if there is a tie in fitness, get the file date and time and take the later one
+		if fitness_dt is None or (fitness < file_fitness) or (fitness == file_fitness and fitness_dt < file_dt):
+			fitness = file_fitness
+			fitness_dt = file_dt
+			rf = fn
+
+	return rf
+
+
+def get_list_of_files(base_dir, starts_with=None):
+	"""
+	Get a list of all of the files in the given directory.  ignore subdirectories
+	:param base_dir: fully qualified directory path
+	:param starts_with: <optional> only return files that start with a specific string <starts_with>
+	:return: python list of files
+	"""
+	# List all files in a directory
+	file_list = []
+	with os.scandir(base_dir) as entries:
+		for entry in entries:
+			if entry.is_file():
+				if starts_with is None:
+					file_list.append(str(entry.name))
+				elif entry.name.startswith(starts_with):
+					file_list.append(str(entry.name))
+				else:
+					pass
+
+	return file_list
 
 # ------------------- TEST CODE ------------------------------
 def test_BugSimState():
@@ -165,8 +215,15 @@ def test_BugSimState():
 
 if __name__ == "__main__":
 
-	test_BugSimState()
+	#test_BugSimState()
 
+	dir_to_check = os.path.join(os.getcwd(), 'logs/20191126-094707')
+	ls = get_list_of_files(dir_to_check)
+	print(ls)
+	ls = get_list_of_files(dir_to_check, 'HERB-winner')
+	print(ls)
+	f = get_best_fitness_file(ls)
+	print(f)
 
 
 
