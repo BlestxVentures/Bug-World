@@ -10,7 +10,6 @@ import random
 # WorkSpawner specific
 import WorkSpawnerConfig
 import PubSub
-from PubSub import Message
 
 # Specific to MyWork
 import MyWorkConfig
@@ -31,7 +30,7 @@ def pre_process(message):  # things that need to be done before processing work
 	bucket = WorkSpawnerConfig.DEFAULT_BUCKET_NAME
 	src_file = 'gs://' + bucket + '/config/*'
 	dest_file = '../Bug-World/config/'
-	cmd = ['gsutil', 'cp', '-r', src_file, dest_file ]
+	cmd = ['gsutil', 'cp', '-r', src_file, dest_file]
 	logging.info('executing the following command: ' + str(cmd))
 
 	try:
@@ -41,8 +40,8 @@ def pre_process(message):  # things that need to be done before processing work
 			rv = True
 		else:
 			rv = False
-	except:
-		logging.error('command threw an exception')
+	except Exception as e:
+		logging.error('command threw an exception: ' + str(e))
 		rv = False
 
 	logging.debug('returning: ' + str(rv))
@@ -63,9 +62,10 @@ def post_process(message):  # things that need to be done after the work is comp
 	# use gsutils to mv all directories from ./logs/*
 	#https://cloud.google.com/storage/docs/gsutil/commands/cp
 
+	#gsutil mv -r ../Bug-World/logs gs://bug-world-bucket/Bug-World/
 	bucket = WorkSpawnerConfig.DEFAULT_BUCKET_NAME 
-	base_path = 'gs://' + bucket + '/Bug-World/logs/'
-	cmd = ['gsutil', 'mv', '../Bug-World/logs/', base_path]
+	base_path = 'gs://' + bucket + '/Bug-World/'
+	cmd = ['gsutil', 'mv', '../Bug-World/logs', base_path]
 	logging.info('executing the following command: ' + str(cmd))
 	try:
 		rv = subprocess.call(cmd)

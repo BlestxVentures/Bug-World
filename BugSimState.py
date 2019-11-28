@@ -89,21 +89,25 @@ def write_genome():  # write a single genome to a file and related data
 	# should have a file version information so can match data to simulation version?
 	pass
 
+
 def read_genome():  # read a single genome in from a file and related data
 	"""see write_genome"""
 	# check data file version to see if it matches the code so that the correct code is used to read in the file
 	# assert the data read in matches DefaultGenome
 	pass
 
+
 def read_genomes():
 	# should create a dictionary of all of the data
 
 	pass
 
+
 def create_population_dict():
 	# take full dictionary of data read in and then create a valid population out of it
 	# {key:genome}
 	pass
+
 
 def create_population_from_file():
 	"""probably belongs on the BugPopulation class"""
@@ -113,14 +117,18 @@ def create_population_from_file():
 	# reset the indexer of the population
 	pass
 
+
 def write_genomes():
 	pass
+
 
 def reset_key():
 	pass
 
+
 def write_config():
 	"""should store the config associated with the genome once"""
+
 
 def read_all_genomes():
 	"""read all of the genome files from a directory"""
@@ -136,6 +144,18 @@ def genome_to_vec(genome):
 	# maybe use zeros for fully connected for a sparse net?
 	# should use OrderedDict so all genomes are output the same
 	pass
+
+
+def get_fitness_from_filename(filename):
+	"""
+	pull fitness from the filename
+	:param filename: name of the file that has fitness in the name
+	:return: integer fitness
+	"""
+	fitness = int(0)
+	fields = filename.split('-')
+	return int(fields[2])
+
 
 def get_best_fitness_file(list_of_files):
 	"""
@@ -224,6 +244,7 @@ if __name__ == "__main__":
 	print(ls)
 	f = get_best_fitness_file(ls)
 	print(f)
-
+	fv = get_fitness_from_filename(f)
+	print(fv)
 
 
