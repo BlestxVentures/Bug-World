@@ -68,9 +68,11 @@ class BugBrainInterface:
 
 	def update_brain_inputs(self, brain_data):
 		"""brain_data: dictionary of key value pairs. keys used:
-			right_eye = tuple(R,G,B), dist_sqrd
-			left_eye = tuple(R,G,B), dist_sqrd
+			right_eye = color=tuple(R,G,B), dist_sqrd, dx, dy
+			left_eye = color=tuple(R,G,B), dist_sqrd, dx, dy
 				dist_sqrd = distance that the eye detected the colors provided
+				dx = the x distance between center of bug and detected object
+				dy = the x distance between center of bug and detected object
 				(associated with the colors passed at same call)
 			vel_r = the velocity of the right wheel from the last time step
 			vel_l = the velocity of the right wheel from the last time step
@@ -81,9 +83,11 @@ class BugBrainInterface:
 		# for the eyes, cache the closest object to center of eye hit box TODO:make this closest to the bug
 		if 'right_eye' in brain_data:  # see if we are working with the right eye data
 			if 'right_eye' in self._brain_data:  # see if there is already some data cached
-				(curr_r,curr_g,curr_b), curr_dist_sqrd = self._brain_data.get('right_eye')  # get cached data
-				(r, g, b), dist_sqrd = brain_data.get('right_eye')  # get the potential update
-				if dist_sqrd < curr_dist_sqrd:  # if the potential object is closer, use it, otherwise leave it alone
+				curr_data = self._brain_data.get('right_eye')  # get cached data
+				new_data = brain_data.get('right_eye')  # get the potential update
+
+				# if the potential object is closer, use it, otherwise leave it alone
+				if new_data.get('dist_sqrd') < curr_data.get('dist_sqrd'):
 					self._brain_data.update(brain_data)
 				return
 			else:
@@ -92,12 +96,14 @@ class BugBrainInterface:
 
 		if 'left_eye' in brain_data:  # see if we are working with the left eye data
 			if 'left_eye' in self._brain_data:  # see if there is already some data cached
-				(curr_r, curr_g, curr_b), curr_dist_sqrd = self._brain_data.get('left_eye')  # get cached data
-				(r, g, b), dist_sqrd = brain_data.get('left_eye')  # get the potential update
-				if dist_sqrd < curr_dist_sqrd:  # if the potential object is closer, use it, otherwise leave it alone
+				curr_data = self._brain_data.get('left_eye')  # get cached data
+				new_data = brain_data.get('left_eye')  # get the potential update
+
+				# if the potential object is closer, use it, otherwise leave it alone
+				if new_data.get('dist_sqrd') < curr_data.get('dist_sqrd'):
 					self._brain_data.update(brain_data) # only update the brain if it was closer
 				return
-			else:
+			else:  # if no cached data, just store it
 				self._brain_data.update(brain_data)
 				return
 
@@ -126,15 +132,28 @@ class BugBrainInterface:
 		# should scale from -1 to 1 or 0 to 1 to help the neural net stabilize and converge
 		inputs = []
 
-		(r, g, b), dist_sqrd = self._brain_data.get("right_eye", ((0, 0, 0), 0))
-		inputs.append(r/100.0)
-		inputs.append(g/100.0)
-		inputs.append(b/100.0)
+		# get the data from what the right eye saw if anything, otherwise return empty dict
+		curr_data = self._brain_data.get("right_eye", {})
+		(r, g, b) = curr_data.get("color", (0, 0, 0))
+		dx = curr_data.get('dx', 0)
+		dy = curr_data.get('dy', 0)
 
-		(r, g, b), dist_sqrd = self._brain_data.get("left_eye", ((0, 0, 0), 0))
 		inputs.append(r/100.0)
 		inputs.append(g/100.0)
 		inputs.append(b/100.0)
+		inputs.append(dx)
+		inputs.append(dy)
+
+		# get the data from what the left eye saw if anything, otherwise return empty dict
+		curr_data = self._brain_data.get("left_eye", {})
+		(r, g, b) = curr_data.get("color", (0, 0, 0))
+		dx = curr_data.get('dx', 0)
+		dy = curr_data.get('dy', 0)
+		inputs.append(r/100.0)
+		inputs.append(g/100.0)
+		inputs.append(b/100.0)
+		inputs.append(dx)
+		inputs.append(dy)
 
 		inputs.append(self.cap_zero_to_one(self._owner.health/100.0))
 		inputs.append(self.cap_zero_to_one(self._owner.energy/100.0))
@@ -142,8 +161,8 @@ class BugBrainInterface:
 		inputs.append(self._brain_data.get("right_wheel_v", 0))
 		inputs.append(self._brain_data.get("left_wheel_v", 0))
 
-		# bias neurons
-		inputs.extend([1, 1, 1, 1])
+		# bias neurons ... replaced these with dx and dy of spotted objects in each eye
+		#inputs.extend([1, 1, 1, 1])
 
 		# remove all of the brain data in case it isn't updated on next iteration
 		self._brain_data.clear()

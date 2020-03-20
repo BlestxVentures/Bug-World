@@ -440,24 +440,31 @@ class VisualCollisionMatrix(coll.CollisionMatrix):
 		"""
 			want the distance between the emitter object and the bug...not the eye_hitbox
 		"""
-		detector = detector.owner  # use the the bug as the detector
+		detector = detector.owner  # use the the bug as the detector which is the owner of eye hit box
 
-		dx = detector.get_abs_x() - emitter.get_abs_x()
-		dy = detector.get_abs_y() - emitter.get_abs_y()
+		# find the transform from middle of bug to the detected object
+		# solve bug x local_xform = emitter
+		# inv(bug) x bug x local_xform = inv(bug) x emitter
+		# local_xform will have the x and y in the bugs local coord frame
+		bug_inv = np.linalg.inv(detector.abs_position)
+		local_xform = np.matmul(bug_inv, emitter.abs_position)
+
+		dx = BugWorld.get_x(local_xform)
+		dy = BugWorld.get_y(local_xform)
+
 		dist_sqrd = (dx * dx) + (dy * dy)
-		return {'dist_sqrd':dist_sqrd}
+		return {'color': emitter.color, 'dist_sqrd': dist_sqrd, 'dx': dx, 'dy': dy}
 
 	def invoke_handler(self, detector, emitter):  # for visual collisions
 		collision_data = self.extract_collision_data(detector, emitter)
-		detector.color = emitter.color
-		owner = detector.owner
+		detector.color = emitter.color  # so the eye hit box will show the color detected
+		owner = detector.owner  # bug is owner of eye hit box and that is what has the brain
 
-		dist_sqrd = collision_data.get('dist_sqrd', 0)
 		# TODO: hide this implementation detail for the eye hitbox name
 		if detector.name == 'R':
-			brain_data = {'right_eye': (emitter.color, dist_sqrd)}
+			brain_data = {'right_eye': collision_data}  # overwrite the brain_data for the right eye
 		elif detector.name == 'L':
-			brain_data = {'left_eye': (emitter.color, dist_sqrd)}
+			brain_data = {'left_eye': collision_data}
 		else:  # should be an eye, if not just return
 			return
 
