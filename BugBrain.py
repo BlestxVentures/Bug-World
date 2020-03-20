@@ -152,6 +152,12 @@ class BugBrainInterface:
 		inputs.append(r/100.0)
 		inputs.append(g/100.0)
 		inputs.append(b/100.0)
+
+		# TODO: fix this hard coding of max dist
+		# normalize so numbers stay between 0 and 1
+		max_dist = 61  # bug_radius + 1 + 2*eye_hit_box_radius
+		dx = dx / max_dist
+		dy = dy / max_dist
 		inputs.append(dx)
 		inputs.append(dy)
 

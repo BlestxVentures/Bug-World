@@ -489,8 +489,8 @@ class BugWorld:  # defines the world, holds the objects, defines the rules of in
 	NUM_PLANT_FOOD = 50
 	NUM_MEAT_FOOD = 0
 	NUM_OBSTACLES = 10
-	NUM_STEPS_BEFORE_REPRODUCTION = 200  # control reproduction in the world
-	MAX_GENERATIONS = 100  # stop simulation after this many reproductions
+	NUM_STEPS_BEFORE_REPRODUCTION = 300  # control reproduction in the world
+	MAX_GENERATIONS = 1000  # stop simulation after this many reproductions
 
 	# used to control what types of objects will be controlled by the population interface
 #	valid_population_types = {BWOType.OMN, BWOType.HERB, BWOType.CARN}  # the different types of populations allowed
@@ -792,8 +792,7 @@ class Meat(BWObject):
 class Plant(BWObject):
 	def __init__(self, bug_world, starting_pos, name="PLANT"):
 		super().__init__(bug_world, starting_pos, name )
-		# self.color = Color.DARK_GREEN
-		self.color = Color.RED
+		self.color = Color.BLUE
 		self.default_color = self.color
 		self.type = BWOType.PLANT
 		self.size = 5
